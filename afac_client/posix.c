@@ -505,6 +505,8 @@ static void establish_all_connection()
     int ost_id;
     for(ost_id=0; ost_id<G_SERVER_NUM; ost_id++)
     {
+		if(ost_id % config_param.ion_modulus != 0) continue;
+			
         if(G_SERVER_CONNS[ost_id].sfd == 0) 	// never initialized before
         {
             G_SERVER_CONNS[ost_id].conn = cli_socket(G_SERVER_CONNS[ost_id].name, server_port, tcp_transport);
