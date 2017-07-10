@@ -1,0 +1,42 @@
+IOR-2.10.1: MPI Coordinated Test of Parallel I/O
+
+Sequoia Benchmark Version 1.0
+
+Run began: Fri Jan 30 11:34:07 2015
+Command line used: /WORK/home/yujie/antique/src/IOR-2.10.1_sequoia-1.0/src/C/IOR -a POSIX -k -t 1m -b 512m -B -w -r -g -C -m -F -i 1
+Machine: Linux cn9
+
+Summary:
+	api                = POSIX
+	test filename      = testFile
+	access             = file-per-process
+	ordering           = sequential offsets
+	clients            = 1 (1 per node)
+	repetitions        = 1
+	xfersize           = 1 MiB
+	blocksize          = 512 MiB
+	aggregate filesize = 512 MiB
+
+The server name is cn8
+The server quota is 20
+The server name is cn9
+The server quota is 20
+The server name is cn10
+The server quota is 20
+<4 send buffer was 16384, now 268435456
+WARNING: Expected aggregate file size       = 536870912.
+WARNING: Stat() of aggregate file size      = 0.
+WARNING: Using actual aggregate bytes moved = 536870912.
+access    bw(MiB/s)  block(KiB) xfer(KiB)  open(s)    wr/rd(s)   close(s)   iter
+------    ---------  ---------- ---------  --------   --------   --------   ----
+write     115.45     524288     1024.00    0.012473   4.41       0.009668   0   
+<4 send buffer was 16384, now 268435456
+WARNING: Expected aggregate file size       = 536870912.
+WARNING: Stat() of aggregate file size      = 0.
+WARNING: Using actual aggregate bytes moved = 536870912.
+read      170.18     524288     1024.00    0.016089   2.99       0.002764   0   
+
+Max Write: 115.45 MiB/sec (121.06 MB/sec)
+Max Read:  170.18 MiB/sec (178.45 MB/sec)
+
+Run finished: Fri Jan 30 11:34:15 2015

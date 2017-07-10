@@ -1,0 +1,7 @@
+---- PROTOCOL_BINARY_CMD_OST_PREPARE_DATA Matches (6 in 3 files) ----
+Afac.c (afac_server):        case PROTOCOL_BINARY_CMD_OST_PREPARE_DATA:
+Posix.c (afac_client):    conn_cli *c = send_request(ost_id, PROTOCOL_BINARY_CMD_OST_PREPARE_DATA,
+Posix.c (afac_client):            if((resp->response.magic != PROTOCOL_BINARY_RES) || (resp->response.opcode != PROTOCOL_BINARY_CMD_OST_PREPARE_DATA))
+Posix.c (afac_client):            if((resp->response.magic != PROTOCOL_BINARY_RES) || (resp->response.opcode != PROTOCOL_BINARY_CMD_OST_PREPARE_DATA))
+Posix.c (afac_client):            conn_cli *c = send_request(ost_id, PROTOCOL_BINARY_CMD_OST_PREPARE_DATA,
+Protocol_binary.h:		PROTOCOL_BINARY_CMD_OST_PREPARE_DATA = 0x33,
