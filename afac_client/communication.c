@@ -8,7 +8,7 @@
 #include <netinet/tcp.h>
 #include <fcntl.h>
 #include <assert.h>
-#include "../protocol_binary.h"
+#include "../include/protocol_binary.h"
 #include "communication.h"
 #include "util.h"
 

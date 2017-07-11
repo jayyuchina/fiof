@@ -6,7 +6,7 @@
 #include <time.h>
 
 #define ACCESS_UNIT 1024*1024
-int main(int argc, char *argv[])
+int main_fopen(int argc, char *argv[])
 {
 
     if(argc != 4)
@@ -64,7 +64,7 @@ int main(int argc, char *argv[])
 
 }
 
-int main_io(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
     if(argc != 4)
     {

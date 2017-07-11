@@ -1,3 +1,3 @@
----- ion_cn_rati Matches (2 in 1 files) ----
-Posix.c (afac_client):    else if(strcmp(key, "ion_cn_ration") == 0)
-Posix.c (afac_client):        config_param.ion_cn_ratio = atoi(value) + 1;	// need +1 to create the right interval
+---- /include/jay_global.h Matches (2 in 2 files) ----
+Afac.c (afac_server):#include "../include/jay_global.h"
+Posix.c (afac_client):#include "../include/jay_global.h"
