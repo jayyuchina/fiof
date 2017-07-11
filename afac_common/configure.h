@@ -19,8 +19,7 @@ typedef struct
 	int metadata_caching;
 
 	int cache_device_tmpfs;
-	char tmpfs_path_prefix[PATH_MAX];
-	char tmpfs_path_suffix[PATH_MAX];
+	char tmpfs_path[PATH_MAX];
 	char ssd_path[PATH_MAX];
 
 	// SSD Simulator

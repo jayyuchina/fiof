@@ -16,7 +16,7 @@
 #include <linux/limits.h>
 
 #include "radix-tree.h"
-#include "../include/protocol_binary.h"
+#include "../afac_common/protocol_binary.h"
 #include "util.h"
 
 /* Slab sizing definitions */

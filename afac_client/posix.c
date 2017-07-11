@@ -57,6 +57,7 @@
 #include "tap.h"
 #include <sys/sem.h>
 #include "../afac_common/configure.h"
+#include "../afac_common/ion_util.h"
 
 #ifndef HAVE_OFF64_T
 typedef int64_t off64_t;
@@ -504,7 +505,7 @@ static void establish_all_connection()
     int ost_id;
     for(ost_id=0; ost_id<G_SERVER_NUM; ost_id++)
     {
-		if(ost_id % config_param.ion_modulus != 0) continue;
+		if(!server_is_ion(ost_id, config_param.ion_modulus)) continue;
 			
         if(G_SERVER_CONNS[ost_id].sfd == 0) 	// never initialized before
         {
@@ -941,15 +942,16 @@ static void ssd_device_init()
     //sprintf(device_path, "%s%s", OST_CACHE_DEICE_PATH_PREFIX, my_server_name);
 
     // tmpfs file device path
+    
     if(config_param.cache_device_tmpfs == 1)
     {
-        char* tmpfs_path_prefix = config_param.tmpfs_path_prefix;
-        sprintf(device_path, "%s%s%s", tmpfs_path_prefix, my_server_name, config_param.tmpfs_path_suffix);
-    }
-    else
-    {
-        strcpy(device_path, config_param.ssd_path);
-    }
+		strcpy(device_path, config_param.tmpfs_path);
+
+	}
+	else
+	{
+		strcpy(device_path, config_param.ssd_path);
+	}
 
     device_fd = __real_open(device_path, O_RDWR);
     if(device_fd < 0)

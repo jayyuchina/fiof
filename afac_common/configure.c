@@ -46,13 +46,9 @@ static void digest_config_pair(Config_Param *config_param, struct confread_pair 
         else
             config_param->cache_device_tmpfs = 0;
     }
-    else if(strcmp(key, "tmpfs path prefix") == 0)
+    else if(strcmp(key, "tmpfs path") == 0)
     {
-        strcpy(config_param->tmpfs_path_prefix, value);
-    }
-    else if(strcmp(key, "tmpfs path suffix") == 0)
-    {
-        strcpy(config_param->tmpfs_path_suffix, value);
+        strcpy(config_param->tmpfs_path, value);
     }
     else if(strcmp(key, "ssd path") == 0)
     {

@@ -37,6 +37,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include "../afac_common/configure.h"
+#include "../afac_common/ion_util.h"
 
 
 
@@ -5408,9 +5409,9 @@ static void cache_device_init()
     // tmpfs file device path
     if(config_param.cache_device_tmpfs == 1)
     {
-    	char* tmpfs_path_prefix = config_param.tmpfs_path_prefix;
-    	sprintf(DEVICE_PATH, "%s%s%s", tmpfs_path_prefix, my_server_name, config_param.tmpfs_path_suffix);
-    }
+		strcpy(DEVICE_PATH, config_param.tmpfs_path);
+
+	}
 	else
 	{
 		strcpy(DEVICE_PATH, config_param.ssd_path);
@@ -5420,7 +5421,8 @@ static void cache_device_init()
     device_fd = open(DEVICE_PATH, O_RDWR);
     if(device_fd < 0)
     {
-        fprintf(stderr, "Cannot open device: %s\n", DEVICE_PATH);
+        perror("Cannot open device");
+		fprintf(stderr, "device path: %s\n", DEVICE_PATH);
         return ;
     }
 
