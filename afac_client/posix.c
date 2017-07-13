@@ -513,7 +513,7 @@ static void establish_all_connection()
             if(G_SERVER_CONNS[ost_id].conn == NULL)
             {
                 fprintf(stderr, "cli_socket failed!\n");
-                return 0;
+                return;
             }
             G_SERVER_CONNS[ost_id].sfd = G_SERVER_CONNS[ost_id].conn->sfd;
         }
@@ -525,11 +525,13 @@ static int *mapping_between_real_fd_and_cfd;
 static int mapping_realfd_cfd_init()
 {
     mapping_between_real_fd_and_cfd = calloc(G_MAX_FDS, sizeof(int));
+	return 0;
 }
 
 static int mapping_realfd_cfd_finalize()
 {
     free(mapping_between_real_fd_and_cfd);
+	return 0;
 }
 
 
@@ -970,6 +972,7 @@ static void ssd_device_finalize()
     __real_close(device_fd);
 }
 
+/*
 static inline void asm_delay(int count)
 {
     int i;
@@ -1077,6 +1080,7 @@ static inline void asm_delay(int count)
         asm("xchg %bx,%bx; xchg %bx,%bx; xchg %bx,%bx; xchg %bx,%bx; xchg %bx,%bx; xchg %bx,%bx; xchg %bx,%bx; xchg %bx,%bx; xchg %bx,%bx; xchg %bx,%bx; xchg %bx,%bx");
     }
 }
+*/
 
 
 
@@ -1343,7 +1347,7 @@ static void scatter_block_metadata(scatter_block_info* scatterred_block_metadata
         scatterred_block_metadata[0].ost_id = block_metadata[0];
         scatterred_block_metadata[0].file_block_id = start_block_index;
         scatterred_block_metadata[0].need_access_remotely = 1;
-        return scatterred_block_metadata;
+        return;
     }
 
     uint8_t is_scattered[num_block_metadata];
@@ -1411,7 +1415,7 @@ static void scatter_block_metadata(scatter_block_info* scatterred_block_metadata
     }
 
 
-    return scatterred_block_metadata;
+    return;
 }
 
 static void send_read_request_to_ost(int cfd, scatter_block_info* scatter_blk, int start_offset, int end_offset)
@@ -1614,7 +1618,7 @@ static void rdma_finalize()
     //free(cli_mem_blocks);
 }
 
-static void register_rdma_buf(char * buf, size_t buf_len)
+static void register_rdma_buf(void * buf, size_t buf_len)
 {
     struct timeval rgst_start_time, rgst_end_time;
     if(DEBUG >= 2)	gettimeofday(&rgst_start_time, NULL);
@@ -1677,9 +1681,9 @@ static void pull_rdma_buf(rdma_data_req *rdma_req, int offset_in_buf)
     while (cqe_num < 1);
     //pthread_mutex_unlock(&mem_blk->endpoint->trans_mutex);
     
-	fprintf(stderr, "mh:%#X\t ep:%#X\t src_id:%d\n", rdma_req->mh.v, rdma_req->ep_addr.v, rdma_req->src_srv_id);
+	//fprintf(stderr, "mh:%#X\t ep:%#X\t src_id:%d\n", rdma_req->mh.v, rdma_req->ep_addr.v, rdma_req->src_srv_id);
 
-	fprintf(stderr, "cqe_num:%d\t status:%d\t opcode:%d\t signaled:%d\n", cqe_num, cqe[0].status, cqe[0].opcode, cqe[0].signaled);
+	//fprintf(stderr, "cqe_num:%d\t status:%d\t opcode:%d\t signaled:%d\n", cqe_num, cqe[0].status, cqe[0].opcode, cqe[0].signaled);
 
     if(DEBUG >= 2)	gettimeofday(&pull_end_time, NULL);
     if(DEBUG >= 2) fprintf(stderr, "~~~ rdma time: %lu\n", 1000000 * ( pull_end_time.tv_sec - pull_start_time.tv_sec ) + pull_end_time.tv_usec - pull_start_time.tv_usec);
@@ -2949,6 +2953,8 @@ FILE * hack_fopen(const char *path, const char *mode)
     if(num_open_param == 1) return fdopen(hack_open(path, open_flag), mode);
     else if(num_open_param == 2) return fdopen(hack_open(path, open_flag, open_mode), mode);
 
+	return NULL;
+
 }
 
 int hack_fclose(FILE *stream)
@@ -3146,52 +3152,45 @@ size_t DARSHAN_DECL(fwrite)(const void *ptr, size_t size, size_t nmemb, FILE *st
 int DARSHAN_DECL(unlink)(const char* path)
 {
     fprintf(stderr, "unhack function: unlink()\n");
-    int ret;
-    return(ret);
+    return(0);
 }
 
 int DARSHAN_DECL(fsync)(int fd)
 {
     fprintf(stderr, "unhack function: fsync()\n");
-    int ret;
-    return(ret);
+    return(0);
 }
 
 int DARSHAN_DECL(fdatasync)(int fd)
 {
     fprintf(stderr, "unhack function: fdatasync()\n");
-    int ret;
-    return(ret);
+    return(0);
 }
 
 void* DARSHAN_DECL(mmap64)(void *addr, size_t length, int prot, int flags,
                            int fd, off64_t offset)
 {
     fprintf(stderr, "unhack function: mmap64()\n");
-    void* ret;
-    return(ret);
+    return(0);
 }
 
 void* DARSHAN_DECL(mmap)(void *addr, size_t length, int prot, int flags,
                          int fd, off_t offset)
 {
     fprintf(stderr, "unhack function: mmap()\n");
-    void* ret;
-    return(ret);
+    return(0);
 }
 
 int DARSHAN_DECL(creat)(const char* path, mode_t mode)
 {
     fprintf(stderr, "unhack function: creat()\n");
-    int ret;
-    return(ret);
+    return(0);
 }
 
 int DARSHAN_DECL(creat64)(const char* path, mode_t mode)
 {
     fprintf(stderr, "unhack function: creat64()\n");
-    int ret;
-    return(ret);
+    return(0);
 }
 
 FILE* DARSHAN_DECL(fopen64)(const char *path, const char *mode)
@@ -3202,143 +3201,123 @@ FILE* DARSHAN_DECL(fopen64)(const char *path, const char *mode)
 int DARSHAN_DECL(__xstat64)(int vers, const char *path, struct stat64 *buf)
 {
     fprintf(stderr, "unhack function: __xstat64()\n");
-    int ret;
-    return(ret);
+    return(0);
 }
 
 int DARSHAN_DECL(__lxstat64)(int vers, const char *path, struct stat64 *buf)
 {
     fprintf(stderr, "unhack function: __lxstat64()\n");
-    int ret;
-    return(ret);
+    return(0);
 }
 
 int DARSHAN_DECL(__fxstat64)(int vers, int fd, struct stat64 *buf)
 {
     fprintf(stderr, "unhack function: __fxstat64()\n");
-    int ret;
-    return(ret);
+    return(0);
 }
 
 int DARSHAN_DECL(__xstat)(int vers, const char *path, struct stat *buf)
 {
     fprintf(stderr, "unhack function: xstat()\n");
-    int ret;
-    return(ret);
+    return(0);
 }
 
 int DARSHAN_DECL(__lxstat)(int vers, const char *path, struct stat *buf)
 {
     fprintf(stderr, "unhack function: __lxstat()\n");
-    int ret;
-    return(ret);
+    return(0);
 }
 
 int DARSHAN_DECL(__fxstat)(int vers, int fd, struct stat *buf)
 {
     fprintf(stderr, "unhack function: __fxstat()\n");
-    int ret;
-    return(ret);
+    return(0);
 }
 
 ssize_t DARSHAN_DECL(pread64)(int fd, void *buf, size_t count, off64_t offset)
 {
     fprintf(stderr, "unhack function: pread64()\n");
-    ssize_t ret;
-    return(ret);
+    return(0);
 }
 
 ssize_t DARSHAN_DECL(pread)(int fd, void *buf, size_t count, off_t offset)
 {
     fprintf(stderr, "unhack function: pread()\n");
-    ssize_t ret;
-    return(ret);
+    return(0);
 }
 
 ssize_t DARSHAN_DECL(pwrite)(int fd, const void *buf, size_t count, off_t offset)
 {
     fprintf(stderr, "unhack function: pwrite()\n");
-    ssize_t ret;
-    return(ret);
+    return(0);
 }
 
 ssize_t DARSHAN_DECL(pwrite64)(int fd, const void *buf, size_t count, off64_t offset)
 {
     fprintf(stderr, "unhack function: pwrite64()\n");
-    ssize_t ret;
-    return(ret);
+    return(0);
 }
 
 ssize_t DARSHAN_DECL(readv)(int fd, const struct iovec *iov, int iovcnt)
 {
     fprintf(stderr, "unhack function: readv()\n");
-    ssize_t ret;
-    return(ret);
+    return(0);
 }
 
 ssize_t DARSHAN_DECL(writev)(int fd, const struct iovec *iov, int iovcnt)
 {
     fprintf(stderr, "unhack function: writev()\n");
-    ssize_t ret;
-    return(ret);
+    return(0);
 }
 
 ssize_t DARSHAN_DECL(aio_return64)(struct aiocb64 *aiocbp)
 {
     fprintf(stderr, "unhack function: aio_return64()\n");
-    int ret;
-    return(ret);
+    return(0);
 }
 
 ssize_t DARSHAN_DECL(aio_return)(struct aiocb *aiocbp)
 {
     fprintf(stderr, "unhack function: aio_return()\n");
-    int ret;
-    return(ret);
+    return(0);
 }
 
 int DARSHAN_DECL(lio_listio)(int mode, struct aiocb *const aiocb_list[],
                              int nitems, struct sigevent *sevp)
 {
     fprintf(stderr, "unhack function: lio_listio()\n");
-    int ret;
-    return(ret);
+    return(0);
 }
 
 int DARSHAN_DECL(lio_listio64)(int mode, struct aiocb64 *const aiocb_list[],
                                int nitems, struct sigevent *sevp)
 {
     fprintf(stderr, "unhack function: lio_listio64()\n");
-    int ret;
-    return(ret);
+    return(0);
 }
 
 int DARSHAN_DECL(aio_write64)(struct aiocb64 *aiocbp)
 {
     fprintf(stderr, "unhack function: aio_write64()\n");
-    int ret;
-    return(ret);
+    return(0);
 }
 
 int DARSHAN_DECL(aio_write)(struct aiocb *aiocbp)
 {
     fprintf(stderr, "unhack function: aio_write()\n");
-    int ret;
-    return(ret);
+    return(0);
 }
 
 int DARSHAN_DECL(aio_read64)(struct aiocb64 *aiocbp)
 {
     fprintf(stderr, "unhack function: aio_read64()\n");
-    int ret;
-    return(ret);
+    return(0);
 }
 
 int DARSHAN_DECL(aio_read)(struct aiocb *aiocbp)
 {
     fprintf(stderr, "unhack function: aio_read()\n");
-    int ret;
-    return(ret);
+    return(0);
 }
 
 int DARSHAN_DECL(fstat)(int fd, struct stat *buf)

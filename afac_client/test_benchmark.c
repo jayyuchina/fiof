@@ -62,6 +62,8 @@ int main_fopen(int argc, char *argv[])
 
 	fclose(fp);
 
+	return 0;
+
 }
 
 int main(int argc, char *argv[])
