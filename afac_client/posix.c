@@ -272,7 +272,7 @@ typedef struct
 typedef struct
 {
     int cfd;		// cache layer fd
-    int server_id;
+    int primary_ion_id;
     int sfd;		// socket fd for this file
     char server_name[8];
     char file_name[PATH_MAX];
@@ -456,8 +456,8 @@ static void server_name_array_init()
 
 static void ion_num_init()
 {
-	int num_ion = G_SERVER_NUM / config_param.ion_modulus + 1;
-	if(num_ion <= 0)
+	G_ION_NUM = G_SERVER_NUM / config_param.ion_modulus + 1;
+	if(G_ION_NUM <= 0)
 	{
 		fprintf(stderr, "ERROR: no enough server to support an ION\n");
 		exit(1);
@@ -924,7 +924,7 @@ static int retrieve_block_metadata(fd_map* my_fd_map, int cfd, size_t curr_offse
     int i;
 	for(i=0; i<num_block_index; i++)
 	{
-		block_metadata[i] = my_fd_map->server_id;
+		block_metadata[i] = determine_file_block_ion(start_block_index + i, my_fd_map->primary_ion_id);
 	}
 
 	
@@ -1813,16 +1813,17 @@ static void del_entry_metadata_cache(char * path, int file_block_id)
 
 
 
-
-
 static int determine_file_primary_ion(char *absolute_path, int my_server_id)
 {
     // file based io forwarding
-    if(config_param.ion_with_hash)
+    if(config_param.customizable_ion == 1)
     {
-        uint64_t hv = hash(absolute_path, strlen(absolute_path) + 1);
-        int seudo_srv_id = hv % G_SERVER_NUM;
-        return seudo_srv_id / config_param.ion_modulus * config_param.ion_modulus;
+		if(config_param.primary_ion_hash)
+		{
+        	uint64_t hv = hash(absolute_path, strlen(absolute_path) + 1);
+        	int seudo_srv_id = hv % G_SERVER_NUM;
+        	return seudo_srv_id / config_param.ion_modulus * config_param.ion_modulus;
+		}
     }
     // position based io forwarding
     else
@@ -1833,16 +1834,30 @@ static int determine_file_primary_ion(char *absolute_path, int my_server_id)
 
 static int determine_file_block_ion(int block_id, int primary_ion)
 {
-	int ion_th = block_id / config_param.BLOCK_NUM_PER_ION_CHUNK;
-
-	if(config_param.ION_NUM_PER_FILE == -1)
+	int ion_id;
+	
+	if(config_param.customizable_ion == 1)
 	{
-		ion_th = ion_th % G_ION_NUM;
+		int ion_th = block_id / config_param.BLOCK_NUM_PER_ION_CHUNK;
+
+		if(config_param.ION_NUM_PER_FILE == -1)
+		{
+			ion_th = ion_th % G_ION_NUM;
+		}
+		else
+		{
+			ion_th = ion_th % config_param.ION_NUM_PER_FILE;
+		}
+
+		ion_id = ion_th * config_param.ion_modulus;
 	}
 	else
 	{
-		ion_th = ion_th % config_param.ION_NUM_PER_FILE;
+		ion_id = primary_ion;
 	}
+
+
+	return ion_id;
 }
 
 
@@ -1980,7 +1995,7 @@ int hack_open(char *path, int flags, ...)
     // record the server_name and sfd in the globle array
     fd_map *new_fd_map = calloc(1, sizeof(fd_map));
     new_fd_map->cfd = ret;
-    new_fd_map->server_id = server_id;
+    new_fd_map->primary_ion_id = server_id;
     new_fd_map->sfd = c->sfd;
     new_fd_map->file_offset = 0;
     strcpy(new_fd_map->server_name, server_name);
@@ -2040,7 +2055,7 @@ int hack_close(int fd)
     para_addr_array[0] = &cfd;
     para_len_array[0] = sizeof(cfd);
     conn_cli* c;
-    c = send_request(my_fd_map->server_id, PROTOCOL_BINARY_CMD_CLOSE,
+    c = send_request(my_fd_map->primary_ion_id, PROTOCOL_BINARY_CMD_CLOSE,
                      num_para, para_addr_array, para_len_array);
 
     int resp_ret = cli_must_read_command(c);
@@ -2156,7 +2171,7 @@ off64_t hack_lseek(int fd, off64_t offset, int whence)
     para_len_array[2] = sizeof(whence);
     para_addr_array[3] = &curr_offset;
     para_len_array[3] = sizeof(curr_offset);
-    conn_cli* c = send_request(my_fd_map->server_id, PROTOCOL_BINARY_CMD_LSEEK,
+    conn_cli* c = send_request(my_fd_map->primary_ion_id, PROTOCOL_BINARY_CMD_LSEEK,
                                num_para, para_addr_array, para_len_array);
 
     while(1)
@@ -2185,7 +2200,7 @@ off64_t hack_lseek(int fd, off64_t offset, int whence)
             para_addr_array[4] = open_arg;
             para_len_array[4] = sizeof(ost_open_arg);
 
-            c = send_request(my_fd_map->server_id, PROTOCOL_BINARY_CMD_LSEEK,
+            c = send_request(my_fd_map->primary_ion_id, PROTOCOL_BINARY_CMD_LSEEK,
                              num_para, para_addr_array, para_len_array);
             continue;
 

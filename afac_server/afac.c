@@ -2103,6 +2103,7 @@ static void handle_rdma_read_ost(protocol_binary_request_header *req, conn* c)
     if(ost_file != NULL)
     {
         rdma_mem_block *rdma_mem_blk = get_mem_block();
+		//fprintf(stderr, "get_mem_block: %#X\n", rdma_mem_blk->mem);
 
         // no free mem_blk, need to retry
         // TODO: MAY RESULT IN POOR PERFORMANCE!!!!!
@@ -3787,7 +3788,7 @@ static void server_name_array_init()
 
     printf("%d server name init complete: ", G_SERVER_NUM);
     for(i=0; i<G_SERVER_NUM; i++)
-        printf("%s\t", G_SERVER_NAME_ARRAY[i].name);
+        printf("%s ", G_SERVER_NAME_ARRAY[i].name);
     printf("\n");
 
 	if(config_param.LASIOD_SCATTER_NUM < 0) config_param.LASIOD_SCATTER_NUM = G_SERVER_NUM;
@@ -4807,6 +4808,7 @@ static void read_ost_block_direct(Ost_File *file, char* buf, block_data_req *blk
 {
 	int64_t offset = ((int64_t)blk_req->file_block_id) << G_BLOCK_SIZE_SHIFT + blk_req->start_offset;
 	int64_t count = blk_req->end_offset - blk_req->start_offset + 1;
+	//fprintf(stderr, "buf: %#X\t offset: %lld count: %lld\n", buf, offset, count);
 	if(pread(file->real_fd, buf, count, offset) != count)
 	{
 		perror("read_ost_block_direct error");
@@ -5096,6 +5098,8 @@ static void rdma_init()
         srv_mem_blocks[i].endpoint = &srv_rdmas[i / config_param.SRV_MEM_BLK_PER_EP];
         srv_mem_blocks[i].mem = srv_mem_blocks[i].endpoint->ep_mem + (i % config_param.SRV_MEM_BLK_PER_EP) * SIZE_RDMA_MEM_BLK;
         assert(srv_mem_blocks[i].mem);
+		// DEBUG0713
+		fprintf(stderr, "srv_mem_block[%d]: %#X\n", i, srv_mem_blocks[i].mem);
     }
     num_free_srv_rdma_mem_block = MAX_NUM_SRV_RDMA_MEM_BLOCK;
 }
@@ -5133,6 +5137,9 @@ static rdma_mem_block* get_mem_block()
                 srv_mem_blocks[cur_blk].is_free = 0;
                 num_free_srv_rdma_mem_block --;
                 last_assign_mem_blk = cur_blk;
+
+				// DEBUG0713
+				fprintf(stderr, "mem_block[%d]: %#X\n", cur_blk, srv_mem_blocks[cur_blk].mem);
                 break;
             }
         }

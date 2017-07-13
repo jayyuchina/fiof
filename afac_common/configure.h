@@ -12,7 +12,6 @@ typedef struct
 	int client_debug_level;
 
 	int ion_modulus;
-	int ion_with_hash;
 
 	int use_cache;
 	int cache_device_tmpfs;
@@ -20,6 +19,9 @@ typedef struct
 	char ssd_path[PATH_MAX];
 
 	// MULTI ION
+	int customizable_ion;
+	int primary_ion_hash;
+	int primary_ion_pos;
 	int ION_NUM_PER_FILE;
 	int BLOCK_NUM_PER_ION_CHUNK;
 

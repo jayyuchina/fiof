@@ -1,3 +1,1 @@
----- Init RDMA Memory Matches (2 in 2 files) ----
-Afac.c (afac_server):        if(DEBUG) fprintf(stderr, "Init RDMA Memory: [%d Bytes]\n", ep_mem_size);
-Posix.c (afac_client):    if(DEBUG >= 2) fprintf(stderr, "Init RDMA Memory: [%d Bytes]\n", ep_mem_size);
+---- fd_map->server_id Matches (0 in 0 files) ----

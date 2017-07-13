@@ -68,16 +68,17 @@ int main_fopen(int argc, char *argv[])
 
 int main(int argc, char *argv[])
 {
-    if(argc != 4)
+    if(argc != 5)
     {
-        printf("useage: main read/write blk_size_in_kb blk_count\n");
+        printf("useage: main filename read/write blk_size_in_kb blk_count\n");
         return 0;
     }
-    int read_or_write = atoi(argv[1]);
-    double blk_size_in_kb = atof(argv[2]);
-    int blk_count = atoi(argv[3]);
+	char * filename = argv[1];
+    int read_or_write = atoi(argv[2]);
+    double blk_size_in_kb = atof(argv[3]);
+    int blk_count = atoi(argv[4]);
 
-    int fd = open("/WORK/home/yujie/yujie/afac/afac_client/jay_test_file.dat", O_RDWR);
+    int fd = open(filename, O_RDWR);
 
     // init the write out blk
     unsigned long blk_size = 1024L * blk_size_in_kb / sizeof(unsigned long);

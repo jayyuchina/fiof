@@ -18,13 +18,6 @@ static void digest_config_pair(Config_Param *config_param, struct confread_pair 
     {
         config_param->ion_modulus = atoi(value);	
     }
-    else if(strcmp(key, "ion_with_hash") == 0)
-    {
-		if(strcmp(value, "on") == 0)
-        	config_param->ion_with_hash = 1;	
-		else
-			config_param->ion_with_hash = 0;
-    }
     else if(strcmp(key, "cache") == 0)
     {
         if(strcmp(value, "on") == 0)
@@ -46,6 +39,26 @@ static void digest_config_pair(Config_Param *config_param, struct confread_pair 
     else if(strcmp(key, "ssd path") == 0)
     {
         strcpy(config_param->ssd_path, value);
+    }
+    else if(strcmp(key, "customizable ion") == 0)
+    {
+        if(strcmp(value, "on") == 0)
+            config_param->customizable_ion = 1;
+        else
+            config_param->customizable_ion = 0;
+    }
+    else if(strcmp(key, "primary ion method") == 0)
+    {
+        if(strcmp(value, "hash") == 0)
+        {
+            config_param->primary_ion_hash = 1;
+            config_param->primary_ion_pos = 0;
+        }
+        else
+        {
+            config_param->primary_ion_hash = 0;
+            config_param->primary_ion_pos = 1;
+        }
     }
     else if(strcmp(key, "ION_NUM_PER_FILE") == 0)
     {
