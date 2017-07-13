@@ -483,7 +483,7 @@ static void my_server_id_init()
         }
     }
 
-    fprintf(stderr, "error: can't find my name(%s) in G_SERVER_NAME_ARRAY\n", server_name);
+    fprintf(stderr, "error: can't find my name(%s) in server_list\n", server_name);
     MY_SERVER_ID = -1;
     exit(1);
 }
@@ -1178,6 +1178,7 @@ static double dicount_with_io_size(int size)
 	}
 }
 
+/*
 static void keep_tmpfs_busy_by_writing(char* buf, unsigned long offset, int size, double num_times)
 {
     if(config_param.cache_device_tmpfs == 1 && config_param.simulate_ssd == 1)
@@ -1302,6 +1303,8 @@ static void write_ssd_data_locally(char * buf, int offset_in_buf, int device_blo
                                    (end_offset - start_offset + 1), config_param.simulate_write_latency);
     device_semaphore_v();
 }
+
+*/
 
 static int check_ost_id_is_unique(scatter_block_info* this_round_block_array, int size_this_round, int ost_id)
 {
@@ -1516,6 +1519,11 @@ static void pull_rdma_data(rdma_mem_block *mem_blk, block_data_req *blk_req, rdm
     while (cqe_num < 1);
     pthread_mutex_unlock(&mem_blk->endpoint->trans_mutex);
 
+	if(cqe[0].status != GLEX_CQE_STATUS_SUCCESS)
+	{
+		fprintf(stderr, "RDMA WARNING: wrong cq status!\n");
+	}
+
     if(DEBUG >= 2)	gettimeofday(&pull_end_time, NULL);
     if(DEBUG >= 2) fprintf(stderr, "~~~ rdma time: %lu\n", 1000000 * ( pull_end_time.tv_sec - pull_start_time.tv_sec ) + pull_end_time.tv_usec - pull_start_time.tv_usec);
 }
@@ -1679,6 +1687,11 @@ static void pull_rdma_buf(rdma_data_req *rdma_req, int offset_in_buf)
         glex_poll_cq(cli_rdma.ep, &cqe_num, cqe);
     }
     while (cqe_num < 1);
+
+	if(cqe[0].status != GLEX_CQE_STATUS_SUCCESS)
+	{
+		fprintf(stderr, "RDMA WARNING: wrong cq status!\n");
+	}
     //pthread_mutex_unlock(&mem_blk->endpoint->trans_mutex);
     
 	//fprintf(stderr, "mh:%#X\t ep:%#X\t src_id:%d\n", rdma_req->mh.v, rdma_req->ep_addr.v, rdma_req->src_srv_id);
@@ -1802,7 +1815,7 @@ static void del_entry_metadata_cache(char * path, int file_block_id)
 
 
 
-static int determine_ion_id(char *absolute_path, int my_server_id)
+static int determine_file_primary_ion(char *absolute_path, int my_server_id)
 {
     // file based io forwarding
     if(config_param.ion_with_hash)
@@ -1816,6 +1829,20 @@ static int determine_ion_id(char *absolute_path, int my_server_id)
     {
         return my_server_id / config_param.ion_modulus * config_param.ion_modulus;
     }
+}
+
+static int determine_file_block_ion(int block_id, int primary_ion)
+{
+	int ion_th = block_id / config_param.BLOCK_NUM_PER_ION_CHUNK;
+
+	if(config_param.ION_NUM_PER_FILE == -1)
+	{
+		ion_th = ion_th % G_ION_NUM;
+	}
+	else
+	{
+		ion_th = ion_th % config_param.ION_NUM_PER_FILE;
+	}
 }
 
 
@@ -1881,7 +1908,7 @@ int hack_open(char *path, int flags, ...)
     if(DEBUG) fprintf(stderr, "### hack open(%s)\n", absolute_path);
 
 	int server_id;
-	server_id = determine_ion_id(absolute_path, MY_SERVER_ID);
+	server_id = determine_file_primary_ion(absolute_path, MY_SERVER_ID);
     char * server_name = G_SERVER_CONNS[server_id].name;
 
     // JAY: establish new coneections for every newly open file?

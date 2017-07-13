@@ -25,19 +25,12 @@ static void digest_config_pair(Config_Param *config_param, struct confread_pair 
 		else
 			config_param->ion_with_hash = 0;
     }
-    else if(strcmp(key, "metadata management") == 0)
-    {
-        if(strcmp(value, "hash") == 0)
-            config_param->metadata_hash = 1;
-        else
-            config_param->metadata_hash = 0;
-    }
-    else if(strcmp(key, "metadata caching") == 0)
+    else if(strcmp(key, "cache") == 0)
     {
         if(strcmp(value, "on") == 0)
-            config_param->metadata_caching = 1;
+            config_param->use_cache = 1;
         else
-            config_param->metadata_caching = 0;
+            config_param->use_cache = 0;
     }
     else if(strcmp(key, "cache device") == 0)
     {
@@ -54,20 +47,13 @@ static void digest_config_pair(Config_Param *config_param, struct confread_pair 
     {
         strcpy(config_param->ssd_path, value);
     }
-    else if(strcmp(key, "simulate ssd with tmpfs") == 0)
+    else if(strcmp(key, "ION_NUM_PER_FILE") == 0)
     {
-        if(strcmp(value, "on") == 0)
-            config_param->simulate_ssd = 1;
-        else
-            config_param->simulate_ssd = 0;
+        config_param->ION_NUM_PER_FILE = atoi(value);
     }
-    else if(strcmp(key, "simulate read latency") == 0)
+    else if(strcmp(key, "BLOCK_NUM_PER_ION_CHUNK") == 0)
     {
-        config_param->simulate_read_latency = atof(value);
-    }
-    else if(strcmp(key, "simulate write latency") == 0)
-    {
-        config_param->simulate_write_latency = atof(value);
+        config_param->BLOCK_NUM_PER_ION_CHUNK = atoi(value);
     }
     else if(strcmp(key, "LASIOD") == 0)
     {
@@ -105,6 +91,8 @@ static void digest_config_pair(Config_Param *config_param, struct confread_pair 
 
 void read_config_file(Config_Param *config_param)
 {
+	memset(config_param, 0, sizeof(Config_Param));
+	
     char *path = CONFIG_PARAM_PATH;
 
     struct confread_file *configFile;

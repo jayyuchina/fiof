@@ -13,19 +13,15 @@ typedef struct
 
 	int ion_modulus;
 	int ion_with_hash;
-	
-	int metadata_hash;
-	
-	int metadata_caching;
 
+	int use_cache;
 	int cache_device_tmpfs;
 	char tmpfs_path[PATH_MAX];
 	char ssd_path[PATH_MAX];
 
-	// SSD Simulator
-	int simulate_ssd;
-	double simulate_read_latency;
-	double simulate_write_latency;
+	// MULTI ION
+	int ION_NUM_PER_FILE;
+	int BLOCK_NUM_PER_ION_CHUNK;
 
 	// LASIOD
 	int LASIOD;
