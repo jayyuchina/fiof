@@ -13,7 +13,8 @@
 #include <string.h>
 #include <sys/resource.h>
 #include <fcntl.h>
-#include <linux/limits.h>
+//#include <linux/limits.h>
+#include "../afac_common/jay_global.h"
 
 #include "radix-tree.h"
 #include "../afac_common/protocol_binary.h"

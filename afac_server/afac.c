@@ -15,7 +15,6 @@
 #include <sysexits.h>
 #include <assert.h>
 #include <event2/event.h>
-#include <linux/limits.h>
 #include "afac.h"
 #include "hash.h"
 #include "assoc.h"
@@ -196,7 +195,6 @@ struct item_list
 
 /*communication*/
 static conn *listen_conn = NULL;
-static int MAX_FDS;
 static struct event_base *main_base;
 
 enum transmit_result
@@ -225,16 +223,17 @@ extern pthread_mutex_t *file_find_open_clean_locks;
 static struct event maxconnsevent;
 
 
+/*
 static void file_mapping_init()
 {
     int i = 0;
     int next_fd = dup(1);
-    int headroom = 10;      /* account for extra unexpected open FDs */
+    int headroom = 10;      
     struct rlimit rl;
 
     MAX_FDS = global_settings.max_open_files + headroom + next_fd;
 
-    /* But if possible, get the actual highest FD we can possibly ever see. */
+    
     if (getrlimit(RLIMIT_NOFILE, &rl) == 0)
     {
         MAX_FDS = rl.rlim_max;
@@ -251,7 +250,7 @@ static void file_mapping_init()
     if ((mapping = calloc(MAX_FDS, sizeof(struct file_mapping))) == NULL)
     {
         fprintf(stderr, "Failed to allocate file mappings structures\n");
-        /* This is unrecoverable so bail out early. */
+        
         exit(1);
     }
     for(i = 0; i < MAX_FDS; i++)
@@ -259,6 +258,7 @@ static void file_mapping_init()
         pthread_mutex_init(&(mapping[i].file_unit_lock), NULL);
     }
 }
+*/
 
 static void maxconns_handler(const int fd, const short which, void *arg)
 {
@@ -310,14 +310,13 @@ static const char *prot_text(enum protocol prot)
  */
 static void conn_init(void)
 {
-    /* We're unlikely to see an FD much higher than maxconns. */
+	/*
     int next_fd = dup(1);
-    int headroom = 10;      /* account for extra unexpected open FDs */
+    int headroom = 10;     
     struct rlimit rl;
 
     MAX_FDS = global_settings.maxconns + headroom + next_fd;
 
-    /* But if possible, get the actual highest FD we can possibly ever see. */
     if (getrlimit(RLIMIT_NOFILE, &rl) == 0)
     {
         MAX_FDS = rl.rlim_max;
@@ -329,6 +328,7 @@ static void conn_init(void)
     }
 
     close(next_fd);
+	*/
 
     if ((conns = calloc(MAX_FDS, sizeof(conn *))) == NULL)
     {
@@ -1696,6 +1696,7 @@ static void pull_rdma_data(rdma_mem_block *mem_blk, block_data_req *blk_req, rdm
 
 static void handle_open(protocol_binary_request_header *req, conn* c)
 {
+	
     assert(req->request.para_num == 2 || req->request.para_num == 3);
     int buf_offset = 0;
     buf_offset += sizeof(protocol_binary_request_header);
@@ -1720,6 +1721,9 @@ static void handle_open(protocol_binary_request_header *req, conn* c)
         mfd = assign_mfd(3, path, open_flags, open_mode);
     else
         mfd = assign_mfd(2, path, open_flags, 0);
+
+
+
 
     // change the fd from MDS to unified cache fd
     int cfd = MFD_TO_CFD(MY_SERVER_ID, mfd);
@@ -1752,7 +1756,6 @@ static void handle_open(protocol_binary_request_header *req, conn* c)
 
     if(DEBUG)
         fprintf(stderr, "OPEN FILE:\t mfd[%d]\n", mfd);
-
 }
 
 static void handle_close(protocol_binary_request_header *req, conn* c)
@@ -2041,6 +2044,8 @@ static void handle_ost_prepare_data(protocol_binary_request_header *req, conn* c
 
 static void handle_rdma_read_ost(protocol_binary_request_header *req, conn* c)
 {
+
+	
     assert(req->request.para_num ==  1 || req->request.para_num ==  2);
     //if(DEBUG) fprintf(stderr, "thread[%d] handling......\n", pthread_self());
 
@@ -3510,7 +3515,7 @@ static void init_mds_file(Mds_File* file)
 }
 
 static void mfd_array_init()
-{
+{	
     if ((mfd_array = calloc(MAX_FDS, sizeof(mfd_array_entry))) == NULL)
     {
         fprintf(stderr, "Failed to allocate mfd array structures\n");
@@ -3518,9 +3523,9 @@ static void mfd_array_init()
     }
 
     // avoid confusion, do not assign 0,1,2 as fd
-    mfd_array[0].is_occupied = true;
-    mfd_array[1].is_occupied = true;
-    mfd_array[2].is_occupied = true;
+    mfd_array[0].is_occupied = 1;
+    mfd_array[1].is_occupied = 1;
+    mfd_array[2].is_occupied = 1;
 
     last_assign_mfd = 0;
 }
@@ -3530,7 +3535,7 @@ static void mfd_array_finalize()
     int i=0;
     for(i=3; i<MAX_FDS; i++)
     {
-        if(mfd_array[i].is_occupied == true)
+        if(mfd_array[i].is_occupied == 1)
         {
             free(mfd_array[i].file);
         }
@@ -3546,31 +3551,30 @@ static inline int check_if_mfd_is_occupied(int mfd)
 
 static int assign_mfd(int arg_num, char *path, int flag, int mode)
 {
-    int path_len = strlen(path);
-
     //  Make sure different client opened the same file, get the same mfd!!
     //  It's important. It seems Dong haven't deal with this.
-    if(check_if_mds_file_is_opened(path, path_len))
+    if(check_if_mds_file_is_opened(path, PATH_MAX))
     {
         // opened already
-        return get_open_mds_file_mfd(path, path_len);
+        return get_open_mds_file_mfd(path, PATH_MAX);
     }
 
     // else, not opened
 
     pthread_mutex_lock(&mfd_array_mutex);
-    int assign_mfd = last_assign_mfd;
-    int i = 0;
+    int assign_mfd;
+    int i = 1;
     for(; i<MAX_FDS; i++)
     {
-        if(mfd_array[assign_mfd].is_occupied == true)
+        assign_mfd = (last_assign_mfd + i) % MAX_FDS;
+		
+        if(mfd_array[assign_mfd].is_occupied == 1)
         {
-            assign_mfd = (assign_mfd + 1) % MAX_FDS;
             continue;
         }
         else
         {
-            mfd_array[assign_mfd].is_occupied = true;
+            mfd_array[assign_mfd].is_occupied = 1;
             last_assign_mfd = assign_mfd;
             break;
         }
@@ -3585,15 +3589,15 @@ static int assign_mfd(int arg_num, char *path, int flag, int mode)
     else
     {
         mfd_array[assign_mfd].arg_num = arg_num;
-        memcpy(mfd_array[assign_mfd].path_name, path, path_len + 1);	// need add the '\0' char
-        mfd_array[assign_mfd].flag = flag;
+	    memcpy(mfd_array[assign_mfd].path_name, path, PATH_MAX);	// need add the '\0' char
+	    mfd_array[assign_mfd].flag = flag;
         mfd_array[assign_mfd].mode = mode;
         mfd_array[assign_mfd].file = calloc(1, sizeof(Mds_File));
         init_mds_file(mfd_array[assign_mfd].file);
 
         // it's essential that use mfd_array[assign_mfd].path_name to insert_open_mds_file
         // since the hash_table won't calloc new memory for the path, the path parm should be enduring it self
-        insert_open_mds_file(mfd_array[assign_mfd].path_name, path_len, assign_mfd);
+        insert_open_mds_file(mfd_array[assign_mfd].path_name, PATH_MAX, assign_mfd);
         return assign_mfd;
     }
 }
@@ -5091,15 +5095,16 @@ static void rdma_init()
 
     MAX_NUM_SRV_RDMA_MEM_BLOCK = config_param.SRV_MEM_BLK_PER_EP * config_param.SRV_RDMA_EP_NUM;
     srv_mem_blocks = calloc(1, sizeof(rdma_mem_block) * MAX_NUM_SRV_RDMA_MEM_BLOCK);
-    for(i=0; i<MAX_NUM_SRV_RDMA_MEM_BLOCK; i++)
+
+	
+	for(i=0; i<MAX_NUM_SRV_RDMA_MEM_BLOCK; i++)
     {
         srv_mem_blocks[i].is_free = 1;
         srv_mem_blocks[i].id = i;
         srv_mem_blocks[i].endpoint = &srv_rdmas[i / config_param.SRV_MEM_BLK_PER_EP];
         srv_mem_blocks[i].mem = srv_mem_blocks[i].endpoint->ep_mem + (i % config_param.SRV_MEM_BLK_PER_EP) * SIZE_RDMA_MEM_BLK;
         assert(srv_mem_blocks[i].mem);
-		// DEBUG0713
-		fprintf(stderr, "srv_mem_block[%d]: %#X\n", i, srv_mem_blocks[i].mem);
+		
     }
     num_free_srv_rdma_mem_block = MAX_NUM_SRV_RDMA_MEM_BLOCK;
 }
@@ -5137,10 +5142,7 @@ static rdma_mem_block* get_mem_block()
                 srv_mem_blocks[cur_blk].is_free = 0;
                 num_free_srv_rdma_mem_block --;
                 last_assign_mem_blk = cur_blk;
-
-				// DEBUG0713
-				fprintf(stderr, "mem_block[%d]: %#X\n", cur_blk, srv_mem_blocks[cur_blk].mem);
-                break;
+			    break;
             }
         }
     }

@@ -90,6 +90,7 @@ static void digest_config_pair(Config_Param *config_param, struct confread_pair 
     else if(strcmp(key, "SRV_RDMA_EP_NUM") == 0)
     {
         config_param->SRV_RDMA_EP_NUM = atoi(value);
+		
     }
     else if(strcmp(key, "SRV_MEM_BLK_PER_EP") == 0)
     {

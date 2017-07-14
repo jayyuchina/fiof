@@ -179,7 +179,7 @@ typedef struct
 /**********************   JAY  GLOBLES ********************************/
 int DEBUG;
 
-static int					G_MAX_FDS = -1;
+static int					G_MAX_FDS = MAX_FDS;
 
 static int 				G_SERVER_NUM;
 static server_conn_info*	G_SERVER_CONNS;
@@ -335,9 +335,9 @@ static int intercept_init(void)
     int headroom = 10;      /* account for extra unexpected open FDs */
     struct rlimit rl;
 
+	/*
     int max_fds = 1024 + headroom + next_fd;
 
-    /* But if possible, get the actual highest FD we can possibly ever see. */
     if (getrlimit(RLIMIT_NOFILE, &rl) == 0)
     {
         max_fds = rl.rlim_max;
@@ -351,6 +351,7 @@ static int intercept_init(void)
     __real_close(next_fd);
 
     G_MAX_FDS = max_fds;
+    */
 
     /*
     if ((fd_map_array = calloc(max_fds, sizeof(fd_map))) == NULL)
@@ -456,7 +457,7 @@ static void server_name_array_init()
 
 static void ion_num_init()
 {
-	G_ION_NUM = G_SERVER_NUM / config_param.ion_modulus + 1;
+	G_ION_NUM = (G_SERVER_NUM - 1) / config_param.ion_modulus + 1;
 	if(G_ION_NUM <= 0)
 	{
 		fprintf(stderr, "ERROR: no enough server to support an ION\n");
@@ -1486,7 +1487,7 @@ static void send_write_request_to_ost(int cfd, scatter_block_info* scatter_blk, 
 static void pull_rdma_data(rdma_mem_block *mem_blk, block_data_req *blk_req, rdma_data_req *rdma_req)
 {
     struct timeval pull_start_time, pull_end_time;
-    if(DEBUG >= 2)	gettimeofday(&pull_start_time, NULL);
+    if(DEBUG >= 3)	gettimeofday(&pull_start_time, NULL);
 
     glex_ret_t glex_ret;
     struct glex_rdma_req glex_req, *bad_glex_req;
@@ -1524,8 +1525,8 @@ static void pull_rdma_data(rdma_mem_block *mem_blk, block_data_req *blk_req, rdm
 		fprintf(stderr, "RDMA WARNING: wrong cq status!\n");
 	}
 
-    if(DEBUG >= 2)	gettimeofday(&pull_end_time, NULL);
-    if(DEBUG >= 2) fprintf(stderr, "~~~ rdma time: %lu\n", 1000000 * ( pull_end_time.tv_sec - pull_start_time.tv_sec ) + pull_end_time.tv_usec - pull_start_time.tv_usec);
+    if(DEBUG >= 3)	gettimeofday(&pull_end_time, NULL);
+    if(DEBUG >= 3) fprintf(stderr, "~~~ rdma time: %lu\n", 1000000 * ( pull_end_time.tv_sec - pull_start_time.tv_sec ) + pull_end_time.tv_usec - pull_start_time.tv_usec);
 }
 
 
@@ -1655,7 +1656,7 @@ static void deregister_rdma_buf()
 static void pull_rdma_buf(rdma_data_req *rdma_req, int offset_in_buf)
 {
     struct timeval pull_start_time, pull_end_time;
-    if(DEBUG >= 2)	gettimeofday(&pull_start_time, NULL);
+    if(DEBUG >= 3)	gettimeofday(&pull_start_time, NULL);
 
     glex_ret_t glex_ret;
     struct glex_rdma_req glex_req, *bad_glex_req;
@@ -1698,8 +1699,8 @@ static void pull_rdma_buf(rdma_data_req *rdma_req, int offset_in_buf)
 
 	//fprintf(stderr, "cqe_num:%d\t status:%d\t opcode:%d\t signaled:%d\n", cqe_num, cqe[0].status, cqe[0].opcode, cqe[0].signaled);
 
-    if(DEBUG >= 2)	gettimeofday(&pull_end_time, NULL);
-    if(DEBUG >= 2) fprintf(stderr, "~~~ rdma time: %lu\n", 1000000 * ( pull_end_time.tv_sec - pull_start_time.tv_sec ) + pull_end_time.tv_usec - pull_start_time.tv_usec);
+    if(DEBUG >= 3)	gettimeofday(&pull_end_time, NULL);
+    if(DEBUG >= 3) fprintf(stderr, "~~~ rdma time: %lu\n", 1000000 * ( pull_end_time.tv_sec - pull_start_time.tv_sec ) + pull_end_time.tv_usec - pull_start_time.tv_usec);
 
 }
 
@@ -1849,13 +1850,14 @@ static int determine_file_block_ion(int block_id, int primary_ion)
 			ion_th = ion_th % config_param.ION_NUM_PER_FILE;
 		}
 
-		ion_id = ion_th * config_param.ion_modulus;
+		ion_id = ((ion_th + primary_ion / config_param.ion_modulus) % G_ION_NUM) * config_param.ion_modulus;
 	}
 	else
 	{
 		ion_id = primary_ion;
 	}
 
+	if(DEBUG >= 4) fprintf(stderr, "block[%d] to ion[%d]\n", block_id, ion_id);
 
 	return ion_id;
 }
@@ -1946,7 +1948,7 @@ int hack_open(char *path, int flags, ...)
     void *para_addr_array[num_para];
     uint64_t para_len_array[num_para];
     para_addr_array[0] = absolute_path;
-    para_len_array[0] = strlen(absolute_path) + 1;
+    para_len_array[0] = PATH_MAX;
     para_addr_array[1] = &flags;
     para_len_array[1] = sizeof(flags);
     if(para_num == 3)
@@ -2406,7 +2408,7 @@ ssize_t hack_read(int fd, void *buf, size_t count)
                     fprintf(stderr, "cli_try_read_command failed in epoll_wait\n");
                     return 0;
                 }
-                if(DEBUG >= 2) fprintf(stderr, "conn read %d bytes\n", G_SERVER_CONNS[cur_ost].conn->rbytes);
+                if(DEBUG >= 5) fprintf(stderr, "conn read %d bytes\n", G_SERVER_CONNS[cur_ost].conn->rbytes);
 
                 char tmp_rbuf[G_SERVER_CONNS[cur_ost].conn->rbytes];
                 if(G_SERVER_CONNS[cur_ost].conn->frag_num == 1)

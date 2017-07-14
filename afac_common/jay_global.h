@@ -8,6 +8,7 @@
 #include "glex.h"
 #include <pthread.h>
 #include <linux/limits.h>
+//#define PATH_MAX 2048
 
 // global params
 
@@ -37,6 +38,8 @@
 
 // SIMULATE SSD
 #define SIMULATE_SSD_SEM_KEY 1314
+
+#define MAX_FDS 8192
 
 typedef struct
 {
