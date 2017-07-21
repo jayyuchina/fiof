@@ -19,7 +19,7 @@ typedef struct
 	char ssd_path[PATH_MAX];
 
 	// MULTI ION
-	int customizable_ion;
+	int multiple_ion;
 	int primary_ion_hash;
 	int primary_ion_pos;
 	int ION_NUM_PER_FILE;

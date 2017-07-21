@@ -40,12 +40,12 @@ static void digest_config_pair(Config_Param *config_param, struct confread_pair 
     {
         strcpy(config_param->ssd_path, value);
     }
-    else if(strcmp(key, "customizable ion") == 0)
+    else if(strcmp(key, "multiple ion") == 0)
     {
         if(strcmp(value, "on") == 0)
-            config_param->customizable_ion = 1;
+            config_param->multiple_ion = 1;
         else
-            config_param->customizable_ion = 0;
+            config_param->multiple_ion = 0;
     }
     else if(strcmp(key, "primary ion method") == 0)
     {

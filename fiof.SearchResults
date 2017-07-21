@@ -1,1 +1,14 @@
----- linux/limits.h Matches (#count#) ----
+---- ION_NUM Matches (13 in 4 files) ----
+Configure.c (afac_common):    else if(strcmp(key, "ION_NUM_PER_FILE") == 0)
+Configure.c (afac_common):        config_param->ION_NUM_PER_FILE = atoi(value);
+Configure.h (afac_common):	int ION_NUM_PER_FILE;
+Flashcache.conf:ION_NUM_PER_FILE = -1
+Posix.c (afac_client):static int				G_ION_NUM;
+Posix.c (afac_client):static void ion_num_init()
+Posix.c (afac_client):	G_ION_NUM = (G_SERVER_NUM - 1) / config_param.ion_modulus + 1;
+Posix.c (afac_client):	if(G_ION_NUM <= 0)
+Posix.c (afac_client):	ion_num_init();
+Posix.c (afac_client):		if(config_param.ION_NUM_PER_FILE == -1)
+Posix.c (afac_client):			ion_th = ion_th % G_ION_NUM;
+Posix.c (afac_client):			ion_th = ion_th % config_param.ION_NUM_PER_FILE;
+Posix.c (afac_client):		ion_id = ((ion_th + primary_ion / config_param.ion_modulus) % G_ION_NUM) * config_param.ion_modulus;

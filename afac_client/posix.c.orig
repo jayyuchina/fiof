@@ -495,13 +495,7 @@ int8_t **ost_known_fd_array;
 static void ost_known_fd_init()
 {
     assert(G_MAX_FDS > 0 && G_SERVER_NUM);
-    ost_known_fd_array = calloc(sizeof(void*), G_SERVER_NUM );
-	int i;
-	for(i=0; i<G_SERVER_NUM; i++)
-	{
-		ost_known_fd_array[i] = calloc(sizeof(int8_t), G_MAX_FDS );
-	}
-		
+    ost_known_fd_array = calloc(sizeof(int8_t), G_MAX_FDS * G_SERVER_NUM);
 }
 
 static void set_ost_known_fd(int ost_id, int fd)
@@ -1425,7 +1419,7 @@ static void scatter_block_metadata(scatter_block_info* scatterred_block_metadata
             break;
     }
 
-    if(DEBUG >= 4)
+    if(DEBUG >= 2)
     {
         printf("before: ");
         for(i=0; i<num_block_metadata; i++)
@@ -1440,6 +1434,7 @@ static void scatter_block_metadata(scatter_block_info* scatterred_block_metadata
         }
         printf("\n");
     }
+
 
     for(i=0; i<num_block_metadata; i++)
     {
@@ -1497,9 +1492,9 @@ static void send_read_request_to_ost(int cfd, int real_fd, scatter_block_info* s
         para_addr_array[1] = open_arg;
         para_len_array[1] = sizeof(ost_open_arg);
         G_SERVER_CONNS[dest_ost].conn = send_request(dest_ost, PROTOCOL_BINARY_CMD_RDMA_READ_OST,
-                                        num_para, para_addr_array, para_len_array);
+                                       num_para, para_addr_array, para_len_array);
 
-        set_ost_known_fd(dest_ost, real_fd);
+		set_ost_known_fd(dest_ost, real_fd);
 
         if(DEBUG >= 2) fprintf(stderr, ">>> send PATH for block[%d] to OST[%d]\n", blk_req.file_block_id, dest_ost);
     }
@@ -1530,43 +1525,53 @@ static void send_write_request_to_ost(int cfd, int real_fd, scatter_block_info* 
     rdma_req.src_srv_id = MY_SERVER_ID;
     //memcpy(rdma_mem_blk->mem + start_offset, data_buf, rdma_req.len);
 
+
+
     if(check_ost_known_fd(dest_ost, real_fd))
     {
-        // send block req to OST
-        int num_para = 2;
-        void *para_addr_array[num_para];
-        uint64_t para_len_array[num_para];
-        para_addr_array[0] = &blk_req;
-        para_len_array[0] = sizeof(block_data_req);
-        para_addr_array[1] = &rdma_req;
-        para_len_array[1] = sizeof(rdma_data_req);
-        G_SERVER_CONNS[dest_ost].conn = send_request(dest_ost, PROTOCOL_BINARY_CMD_RDMA_WRITE_OST,
-                                        num_para, para_addr_array, para_len_array);
 
-        if(DEBUG >= 2) fprintf(stderr, "<<< send block[%d] write req to OST[%d]\n", blk_req.file_block_id, dest_ost);
-    }
-    else
-    {
-        fd_map* my_fd_map = get_fd_map(cfd);// add a ost_open_arg param, and resend cmd
-        ost_open_arg *open_arg = &(my_fd_map->open_arg);
+    // send block req to OST
+    int num_para = 2;
+    void *para_addr_array[num_para];
+    uint64_t para_len_array[num_para];
+    para_addr_array[0] = &blk_req;
+    para_len_array[0] = sizeof(block_data_req);
+    para_addr_array[1] = &rdma_req;
+    para_len_array[1] = sizeof(rdma_data_req);
+    G_SERVER_CONNS[dest_ost].conn = send_request(dest_ost, PROTOCOL_BINARY_CMD_RDMA_WRITE_OST,
+                                    num_para, para_addr_array, para_len_array);
 
-        // 3 params: block_data_req, rdma_data_req, open_arg
-        int num_para = 3;
-        void *para_addr_array[num_para];
-        uint64_t para_len_array[num_para];
-        para_addr_array[0] = &blk_req;
-        para_len_array[0] = sizeof(block_data_req);
-        para_addr_array[1] = &rdma_req;
-        para_len_array[1] = sizeof(rdma_data_req);
-        para_addr_array[2] = open_arg;
-        para_len_array[2] = sizeof(ost_open_arg);
-        G_SERVER_CONNS[dest_ost].conn = send_request(dest_ost, PROTOCOL_BINARY_CMD_RDMA_WRITE_OST,
-                                        num_para, para_addr_array, para_len_array);
-		
-        set_ost_known_fd(dest_ost, real_fd);
-		
-        if(DEBUG >= 2) fprintf(stderr, ">>> send PATH for block[%d] to OST[%d]\n", blk_req.file_block_id, dest_ost);
+    if(DEBUG >= 2) fprintf(stderr, "<<< send block[%d] write req to OST[%d]\n", blk_req.file_block_id, dest_ost);
     }
+	else
+	{
+
+
+
+	
+                        assert(ost_resp->response.para_num == 2);
+                        // add a ost_open_arg param, and resend cmd
+                        ost_open_arg *open_arg = &(my_fd_map->open_arg);
+                        block_data_req *re_blk_req = (block_data_req *)((char*)tmp_rbuf + handled_bytes);
+                        handled_bytes += sizeof(block_data_req);
+                        rdma_data_req *re_rdma_req = (rdma_data_req*)((char*)tmp_rbuf + handled_bytes);
+                        handled_bytes += sizeof(rdma_data_req);
+
+                        if(DEBUG >= 2) fprintf(stderr, ">>> send PATH for block[%d] to OST[%d]\n", re_blk_req->file_block_id, cur_ost);
+
+                        // 3 params: block_data_req, rdma_data_req, open_arg
+                        int num_para = 3;
+                        void *para_addr_array[num_para];
+                        uint64_t para_len_array[num_para];
+                        para_addr_array[0] = re_blk_req;
+                        para_len_array[0] = sizeof(block_data_req);
+                        para_addr_array[1] = re_rdma_req;
+                        para_len_array[1] = sizeof(rdma_data_req);
+                        para_addr_array[2] = open_arg;
+                        para_len_array[2] = sizeof(ost_open_arg);
+                        G_SERVER_CONNS[cur_ost].conn = send_request(cur_ost, PROTOCOL_BINARY_CMD_RDMA_WRITE_OST,
+                                                       num_para, para_addr_array, para_len_array);
+	}
 
 }
 
@@ -2404,12 +2409,12 @@ ssize_t hack_read(int fd, void *buf, size_t count)
     int num_send_block_reqs = 0;
     int last_send_scatter_block_id = -1;
     // first send NUM_RDMA_MEM_BLK_PER_PROC of block reqs to different ost
-    int num_first_batch_reqs = num_req_osts * 64;
+    int num_first_batch_reqs = num_req_osts * 10;
     num_first_batch_reqs = num_block_metadata < num_first_batch_reqs ?
                            num_block_metadata : num_first_batch_reqs;
     // TODO: need verify that sending all reqs out is a good way
-    for(cur_blk=0; cur_blk<num_first_batch_reqs; cur_blk++)
-    //for(cur_blk=0; cur_blk<num_block_metadata; cur_blk++)
+    //for(cur_blk=0; cur_blk<num_first_batch_reqs; cur_blk++)
+    for(cur_blk=0; cur_blk<num_block_metadata; cur_blk++)
     {
         if(scatter_blocks[cur_blk].need_access_remotely == 0) continue;
 
@@ -2417,7 +2422,7 @@ ssize_t hack_read(int fd, void *buf, size_t count)
                            curr_offset % G_BLOCK_SIZE_IN_BYTES : 0;
         int end_offset = scatter_blocks[cur_blk].file_block_id == end_block_index ?
                          (curr_offset + count - 1) % G_BLOCK_SIZE_IN_BYTES : G_BLOCK_SIZE_IN_BYTES - 1;
-        send_read_request_to_ost(cfd, fd, &scatter_blocks[cur_blk], start_offset, end_offset);
+        send_read_request_to_ost(cfd, &scatter_blocks[cur_blk], start_offset, end_offset);
         num_send_block_reqs++;
         last_send_scatter_block_id = cur_blk;
     }
@@ -2600,19 +2605,27 @@ ssize_t hack_read(int fd, void *buf, size_t count)
                         G_SERVER_CONNS[cur_ost].conn = send_request(cur_ost, PROTOCOL_BINARY_CMD_RDMA_READ_OST_COMPLT,
                                                        num_para, para_addr_array, para_len_array);
 
-                        if(num_send_block_reqs < num_block_metadata)
+                        if(num_send_block_reqs < num_blocks_access_remotely)
                         {
                             // need send these left write reqs
-                            int next_send_blk = last_send_scatter_block_id + 1;
-							assert(next_send_blk >= 0 && next_send_blk < num_block_metadata);
-							
+                            int next_send_blk = -1;
+                            int i;
+                            for(i=last_send_scatter_block_id + 1; i<num_block_metadata; i++)
+                            {
+                                if(scatter_blocks[i].need_access_remotely)
+                                {
+                                    next_send_blk = i;
+                                    last_send_scatter_block_id = i;
+                                }
+                            }
+                            assert(next_send_blk >= 0);
+
                             int start_offset = scatter_blocks[next_send_blk].file_block_id == start_block_index ?
                                                curr_offset % G_BLOCK_SIZE_IN_BYTES : 0;
                             int end_offset = scatter_blocks[next_send_blk].file_block_id == end_block_index ?
                                              (curr_offset + count - 1) % G_BLOCK_SIZE_IN_BYTES : G_BLOCK_SIZE_IN_BYTES - 1;
-                            send_read_request_to_ost(cfd, fd, &scatter_blocks[next_send_blk], start_offset, end_offset);
+                            send_read_request_to_ost(cfd, &scatter_blocks[next_send_blk], start_offset, end_offset);
                             num_send_block_reqs++;
-							last_send_scatter_block_id = next_send_blk;
                         }
 
                         num_ack_block ++;
@@ -2754,7 +2767,7 @@ ssize_t hack_write(int fd, const void *buf, size_t count)
                          (curr_offset + count - 1) % G_BLOCK_SIZE_IN_BYTES : G_BLOCK_SIZE_IN_BYTES - 1;
         int offset_in_buf = scatter_blocks[cur_blk].file_block_id == start_block_index ?
                             0 : G_BLOCK_SIZE_IN_BYTES - first_block_start_offset + G_BLOCK_SIZE_IN_BYTES * (scatter_blocks[cur_blk].file_block_id - start_block_index - 1);
-        send_write_request_to_ost(cfd, fd, &scatter_blocks[cur_blk], offset_in_buf, start_offset, end_offset);
+        send_write_request_to_ost(cfd, &scatter_blocks[cur_blk], offset_in_buf, start_offset, end_offset);
 
         num_send_block_reqs++;
         last_send_scatter_block_id = cur_blk;
@@ -2943,7 +2956,7 @@ ssize_t hack_write(int fd, const void *buf, size_t count)
                                              (curr_offset + count - 1) % G_BLOCK_SIZE_IN_BYTES : G_BLOCK_SIZE_IN_BYTES - 1;
                             int offset_in_buf = scatter_blocks[next_send_blk].file_block_id == start_block_index ?
                                                 0 : G_BLOCK_SIZE_IN_BYTES - first_block_start_offset + G_BLOCK_SIZE_IN_BYTES * (scatter_blocks[next_send_blk].file_block_id - start_block_index - 1);
-                            send_write_request_to_ost(cfd, fd, &scatter_blocks[next_send_blk], offset_in_buf, start_offset, end_offset);
+                            send_write_request_to_ost(cfd, &scatter_blocks[next_send_blk], offset_in_buf, start_offset, end_offset);
                             num_send_block_reqs++;
                         }
                         // need modify event?
