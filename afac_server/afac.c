@@ -4813,7 +4813,7 @@ static void read_ost_block_direct(Ost_File *file, char* buf, block_data_req *blk
 	int64_t offset = ((int64_t)blk_req->file_block_id) << G_BLOCK_SIZE_SHIFT + blk_req->start_offset;
 	int64_t count = blk_req->end_offset - blk_req->start_offset + 1;
 	//fprintf(stderr, "buf: %#X\t offset: %lld count: %lld\n", buf, offset, count);
-	if(pread(file->real_fd, buf, count, offset) != count)
+	if(pread(file->real_fd, buf, count, offset) == -1)
 	{
 		perror("read_ost_block_direct error");
 		exit(1);
@@ -4900,7 +4900,7 @@ static void write_ost_block_direct(Ost_File *file, char* buf, block_data_req *bl
 {
 	int64_t offset = ((int64_t)blk_req->file_block_id) << G_BLOCK_SIZE_SHIFT + blk_req->start_offset;
 	int64_t count = blk_req->end_offset - blk_req->start_offset + 1;
-	if(pwrite(file->real_fd, buf, count, offset) != count)
+	if(pwrite(file->real_fd, buf, count, offset) == -1)
 	{
 		perror("write_ost_block_direct error");
 		exit(1);

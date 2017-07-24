@@ -1913,11 +1913,9 @@ static int determine_file_primary_ion(char *absolute_path, int my_server_id)
             return seudo_srv_id / config_param.ion_modulus * config_param.ion_modulus;
         }
     }
+	
     // position based io forwarding
-    else
-    {
-        return my_server_id / config_param.ion_modulus * config_param.ion_modulus;
-    }
+    return my_server_id / config_param.ion_modulus * config_param.ion_modulus;
 }
 
 static int determine_file_block_ion(int block_id, int primary_ion)
