@@ -2313,6 +2313,10 @@ off64_t hack_lseek(int fd, off64_t offset, int whence)
 
 ssize_t hack_read(int fd, void *buf, size_t count)
 {
+	if(DEBUG >= 4) fprintf(stderr, "*** READ:\tfd[%d]\tbuf[%#X]\tcount:%llu\n", fd, buf, count);
+	
+	if(count == 0) return 0;
+	
     if(check_is_hacked_fd(fd))
     {
         // is cfd, go to my handle routine
@@ -2583,6 +2587,8 @@ ssize_t hack_read(int fd, void *buf, size_t count)
                         int offset_in_buf = recv_blk_req->file_block_id == start_block_index ?
                                             0 : G_BLOCK_SIZE_IN_BYTES - first_block_start_offset + G_BLOCK_SIZE_IN_BYTES * (recv_blk_req->file_block_id - start_block_index - 1);
                         pull_rdma_buf(recv_rdma_req, offset_in_buf);
+	// DEBUG0725
+	fprintf(stderr, "PULL CONTENT:\n%s\n", buf);
 
                         all_already_read_bytes += recv_rdma_req->len;
 
@@ -2643,6 +2649,10 @@ ssize_t hack_read(int fd, void *buf, size_t count)
     if(DEBUG >= 2) gettimeofday(&epoll_end_time, NULL);
     if(DEBUG >= 2) fprintf(stderr, "~~~ ost time: %lu\n", 1000000 * ( epoll_end_time.tv_sec - epoll_start_time.tv_sec ) + epoll_end_time.tv_usec - epoll_start_time.tv_usec);
 
+
+	// DEBUG0725
+	fprintf(stderr, "CONTENT:\n%s\n", buf);
+
 // END
     deregister_rdma_buf();
     my_fd_map->file_offset += all_already_read_bytes;
@@ -2651,6 +2661,10 @@ ssize_t hack_read(int fd, void *buf, size_t count)
 
 ssize_t hack_write(int fd, const void *buf, size_t count)
 {
+	if(DEBUG >= 4) fprintf(stderr, "*** WRITE:\tfd[%d]\tbuf[%#X]\tcount:%llu\n", fd, buf, count);
+
+	if(count == 0) return 0;
+	
     if(check_is_hacked_fd(fd))
     {
         // is cfd, go to my handle routine
